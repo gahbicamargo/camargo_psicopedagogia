@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.routes.atendimento_routes import router as atendimento_router
@@ -16,5 +17,10 @@ app = FastAPI(title="Sistema Psicopedagógico")
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "app" / "static"), name="static")
 app.mount("/arquivos", StaticFiles(directory=DADOS_DIR), name="arquivos")
+
+
+@app.get("/styles.css", include_in_schema=False)
+def get_stylesheet() -> FileResponse:
+	return FileResponse(BASE_DIR / "app" / "templates" / "styles.css", media_type="text/css")
 
 app.include_router(atendimento_router)
