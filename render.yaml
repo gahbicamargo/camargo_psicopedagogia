@@ -1,0 +1,11 @@
+# Render Blueprint - Camargo Psicopedagogia
+# https://docs.render.com/blueprint-spec
+# Variáveis de ambiente (GOOGLE_DRIVE_*, PASTA_ATENDIMENTOS_DIR) configure no Dashboard do serviço.
+
+services:
+  - type: web
+    name: camargo-psicopedagogia
+    runtime: python
+
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
