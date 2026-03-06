@@ -1,0 +1,11 @@
+# Força o Render a usar pip (não Poetry) e Python 3.11
+# https://docs.render.com/build-image-customization#nixpacks
+
+[phases.setup]
+nixpkgs = ["python311"]
+
+[phases.install]
+cmds = ["pip install -r requirements.txt"]
+
+[variables]
+NIXPACKS_PYTHON_VERSION = "3.11"
