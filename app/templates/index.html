@@ -27,7 +27,7 @@
 
         <section class="test-toolbar">
             <div class="toolbar-actions">
-                <a href="/" class="link-btn">Novo paciente</a>
+                <a href="/" class="link-btn" id="toolbar-novo-paciente">Novo paciente</a>
                 <a href="/" class="link-btn">Modo normal</a>
                 <a href="/ambiente-teste" class="link-btn">Abrir ambiente de teste</a>
                 <form action="/atendimentos/gerar-teste" method="post" class="inline-form">
@@ -424,7 +424,7 @@
     </main>
 
     {% if status %}
-    <div class="modal-overlay" id="resultado-modal" role="dialog" aria-modal="true" aria-labelledby="resultado-titulo">
+    <div class="modal-overlay" id="resultado-modal" role="dialog" aria-modal="true" aria-labelledby="resultado-titulo"{% if status == 'sucesso' and arquivo_url and pdf_url %} data-pdf-url="{{ pdf_url }}" data-csv-url="{{ arquivo_url }}"{% endif %}>
         <div class="modal-card {{ status }}">
             <button type="button" class="modal-close" id="modal-close" aria-label="Fechar">×</button>
 
@@ -467,6 +467,80 @@
         </div>
     </div>
     {% endif %}
+
+    <script>
+        (function () {
+            var modal = document.getElementById('resultado-modal');
+            if (!modal) return;
+            var pdfUrl = modal.getAttribute('data-pdf-url');
+            var csvUrl = modal.getAttribute('data-csv-url');
+            if (!pdfUrl || !csvUrl) return;
+            var urls = [pdfUrl, csvUrl];
+            urls.forEach(function (url, i) {
+                setTimeout(function () {
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = '';
+                    a.rel = 'noopener';
+                    a.target = '_blank';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                }, i * 400);
+            });
+        })();
+    </script>
+
+    <div class="modal-overlay hidden" id="confirmar-paciente-modal" role="dialog" aria-modal="true" aria-labelledby="confirmar-paciente-titulo">
+        <div class="modal-card">
+            <h2 id="confirmar-paciente-titulo">Confirmar criação do paciente</h2>
+            <p>Deseja realmente criar a ficha de avaliação para <strong id="confirmar-paciente-nome"></strong>? Os arquivos CSV e PDF serão gerados e salvos na pasta configurada.</p>
+            <div class="modal-actions">
+                <button type="button" id="confirmar-paciente-cancelar" class="btn-secondary">Cancelar</button>
+                <button type="button" id="confirmar-paciente-ok">Sim, criar paciente</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="novo-paciente-modal" role="dialog" aria-modal="true" aria-labelledby="novo-paciente-titulo">
+        <div class="modal-card">
+            <h2 id="novo-paciente-titulo">Novo paciente</h2>
+            <p>Deseja iniciar um novo cadastro? O formulário atual será limpo.</p>
+            <div class="modal-actions">
+                <button type="button" id="novo-paciente-cancelar" class="btn-secondary">Cancelar</button>
+                <a href="/" id="novo-paciente-ok" class="button-link">Sim, novo paciente</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            const btnNovoPaciente = document.getElementById('toolbar-novo-paciente');
+            const novoPacienteModal = document.getElementById('novo-paciente-modal');
+            const novoPacienteCancelar = document.getElementById('novo-paciente-cancelar');
+
+            if (btnNovoPaciente) {
+                btnNovoPaciente.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    if (novoPacienteModal) novoPacienteModal.classList.remove('hidden');
+                });
+            }
+
+            novoPacienteCancelar?.addEventListener('click', function () {
+                if (novoPacienteModal) novoPacienteModal.classList.add('hidden');
+            });
+
+            novoPacienteModal?.addEventListener('click', function (event) {
+                if (event.target === novoPacienteModal) novoPacienteModal.classList.add('hidden');
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && novoPacienteModal && !novoPacienteModal.classList.contains('hidden')) {
+                    novoPacienteModal.classList.add('hidden');
+                }
+            });
+        })();
+    </script>
 
     <script>
         (function () {
@@ -657,6 +731,8 @@
             totalEl.textContent = String(steps.length);
             form.classList.add('wizard-enabled');
 
+            const ETAPA_COM_BOTAO_SALVAR = 2;
+
             function updateStep() {
                 steps.forEach((step, idx) => {
                     step.hidden = idx !== currentStep;
@@ -670,8 +746,8 @@
                 progressEl.style.width = progress + '%';
 
                 prevBtn.disabled = currentStep === 0;
-                nextBtn.hidden = currentStep === steps.length - 1;
-                submitBtn.hidden = currentStep !== steps.length - 1;
+                nextBtn.hidden = currentStep === steps.length - 1 || currentStep === ETAPA_COM_BOTAO_SALVAR;
+                submitBtn.hidden = currentStep !== steps.length - 1 && currentStep !== ETAPA_COM_BOTAO_SALVAR;
             }
 
             function validateCurrentStep() {
@@ -699,6 +775,43 @@
                     currentStep += 1;
                     updateStep();
                     form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+
+            const confirmarModal = document.getElementById('confirmar-paciente-modal');
+            const confirmarNomeEl = document.getElementById('confirmar-paciente-nome');
+            const confirmarOkBtn = document.getElementById('confirmar-paciente-ok');
+            const confirmarCancelarBtn = document.getElementById('confirmar-paciente-cancelar');
+
+            form.addEventListener('submit', function (e) {
+                if (form.getAttribute('data-confirmado') === 'true') {
+                    form.removeAttribute('data-confirmado');
+                    return;
+                }
+                e.preventDefault();
+                const nomeInput = form.querySelector('input[name="nome"]');
+                const nome = nomeInput && nomeInput.value.trim() ? nomeInput.value.trim() : '(sem nome)';
+                if (confirmarNomeEl) confirmarNomeEl.textContent = nome;
+                if (confirmarModal) confirmarModal.classList.remove('hidden');
+            });
+
+            confirmarOkBtn?.addEventListener('click', function () {
+                if (confirmarModal) confirmarModal.classList.add('hidden');
+                form.setAttribute('data-confirmado', 'true');
+                form.submit();
+            });
+
+            confirmarCancelarBtn?.addEventListener('click', function () {
+                if (confirmarModal) confirmarModal.classList.add('hidden');
+            });
+
+            confirmarModal?.addEventListener('click', function (event) {
+                if (event.target === confirmarModal) confirmarModal.classList.add('hidden');
+            });
+
+            document.addEventListener('keydown', function confirmarKeydown(event) {
+                if (event.key === 'Escape' && confirmarModal && !confirmarModal.classList.contains('hidden')) {
+                    confirmarModal.classList.add('hidden');
                 }
             });
 

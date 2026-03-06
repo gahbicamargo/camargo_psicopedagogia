@@ -140,12 +140,11 @@ class PDFService:
 
     def gerar_pdf_atendimento(self, atendimento: Atendimento, recomendacoes: list[str]) -> Path:
         nome_slug = self._normalizar_nome(atendimento.nome)
-        data_str = atendimento.data_avaliacao.strftime("%Y-%m-%d")
 
-        pasta_atendimento = self.pasta_base / f"{nome_slug}_{data_str}"
+        pasta_atendimento = self.pasta_base / nome_slug
         pasta_atendimento.mkdir(parents=True, exist_ok=True)
 
-        caminho_pdf = pasta_atendimento / f"{nome_slug}_{data_str}.pdf"
+        caminho_pdf = pasta_atendimento / f"{nome_slug}_pdf.pdf"
 
         doc = SimpleDocTemplate(
             str(caminho_pdf),

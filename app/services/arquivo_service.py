@@ -11,12 +11,11 @@ class ArquivoService:
 
     def gerar_csv_atendimento(self, atendimento: Atendimento, recomendacoes: list[str]) -> Path:
         aluno_slug = self._normalizar_nome(atendimento.nome)
-        data_str = atendimento.data_avaliacao.strftime("%Y-%m-%d")
 
-        pasta_atendimento = self.pasta_base / f"{aluno_slug}_{data_str}"
+        pasta_atendimento = self.pasta_base / aluno_slug
         pasta_atendimento.mkdir(parents=True, exist_ok=True)
 
-        caminho_csv = pasta_atendimento / f"{aluno_slug}_{data_str}.csv"
+        caminho_csv = pasta_atendimento / f"{aluno_slug}_csv.csv"
 
         with caminho_csv.open("w", newline="", encoding="utf-8-sig") as csv_file:
             writer = csv.writer(csv_file, delimiter=";")
